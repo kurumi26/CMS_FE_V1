@@ -1,0 +1,30 @@
+import axios from 'axios'
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+})
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('jay_token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      // Don't redirect if already on a public page
+      const isPublicRoute = window.location.pathname.startsWith('/s/')
+      if (!isPublicRoute) {
+        localStorage.removeItem('jay_token')
+        localStorage.removeItem('jay_user')
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(err)
+  }
+)
+
+export default api
